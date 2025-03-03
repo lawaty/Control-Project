@@ -1,13 +1,14 @@
 import os
 from flask import Flask, request
+from flask_cors import CORS
 from dotenv import load_dotenv
 
 from DemoPack.DemoUnit import Demo
 
 load_dotenv()
-demo = Demo()
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/")
 def home():
@@ -15,6 +16,7 @@ def home():
 /<param>: Demo Route
 """
 
+demo = Demo()
 @app.route("/<param>")
 def demoEndpoint(param):
     demo.run(param)
