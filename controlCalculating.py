@@ -12,17 +12,22 @@ import sympy as sp
 #       nodesInPaths (same as before but in the paths)
 #
 #output:
-#       the transferFunction
-#       easy to edit and return any step of this steps  (delta,delta from 1 to m,combination of untouched loops)
+#       {
+#       "result":                                    the transferFunction (string),
+#       "compinationsOfUntouchedLoops":              the compination of loops (2d array index i is all compinations of (i+1)loops),
+#       "delta":                                     the delta, 
+#       "delta From 1 to M":                         deltas from 1 to m
+#       }
+
 
 def UnTouchedLoops(numOfNodes, numOfLoops, arrayOfLoops, nodesInLoops):
     nonTouchedLoops=[]
     for i in range(numOfLoops):
-         nonTouchedLoops.append(f"L{i+1}")
-         try:
+        nonTouchedLoops.append(f"L{i+1}")
+        try:
             num=float(arrayOfLoops[i])
             arrayOfLoops[i]=sp.Float(num)
-         except (ValueError, TypeError) as e:
+        except (ValueError, TypeError) as e:
             
             arrayOfLoops[i]=sp.simplify(arrayOfLoops[i])
               
@@ -57,72 +62,74 @@ def UnTouchedLoops(numOfNodes, numOfLoops, arrayOfLoops, nodesInLoops):
         n1=n2
         n2=len(arrayOfLoops)                           
     compNonToucheddLoops=[]
-    print(int(max(numOfUntouched)))
     for i in range(int(max(numOfUntouched))):
         compNonToucheddLoops.append([])
 
     for i in range(len(nonTouchedLoops)):
         compNonToucheddLoops[int(numOfUntouched[i])-1].append(nonTouchedLoops[i])
 
-    print(numOfUntouched)
     return arrayOfLoops,numOfUntouched,compNonToucheddLoops
 
 def untouchedLoopWithPath(numOfNodes, numOfLoops,arrayOfLoops,nodesInLoops,nodesInPath):
-     newArrayOfLoops = np.array([])
-     newNodesInLoops = newNodesInLoops = np.empty((0, numOfNodes))
-     for i in range(numOfLoops):
-          for j in range(numOfNodes):
-               if nodesInLoops[i][j] and nodesInPath[j]==1:
-                    break
-               if j==numOfNodes-1:
-                    newArrayOfLoops=np.append(newArrayOfLoops,arrayOfLoops[i])
-                    newNodesInLoops=np.vstack([newNodesInLoops,nodesInLoops[i]])
-                    print(nodesInLoops[i])             
-     return newArrayOfLoops,newNodesInLoops     
+    newArrayOfLoops = np.array([])
+    newNodesInLoops = newNodesInLoops = np.empty((0, numOfNodes))
+    for i in range(numOfLoops):
+        for j in range(numOfNodes):
+            if nodesInLoops[i][j] and nodesInPath[j]==1:
+                break
+            if j==numOfNodes-1:
+                newArrayOfLoops=np.append(newArrayOfLoops,arrayOfLoops[i])
+                newNodesInLoops=np.vstack([newNodesInLoops,nodesInLoops[i]])            
+    return newArrayOfLoops,newNodesInLoops     
 
 def getDelta(arrayOfLoops,numOfUntouched):
-    #print (type(arrayOfLoops))
     
     result = sp.Integer(1)
     for i in range (len(arrayOfLoops)):
-          print(arrayOfLoops[i])
-          try:
+        try:
             result += (-1)**(numOfUntouched[i])*sp.Float(arrayOfLoops[i])
-          except:
-              result += (-1)**(numOfUntouched[i])*arrayOfLoops[i]
+        except:
+            result += (-1)**(numOfUntouched[i])*arrayOfLoops[i]
     return result
 
 def deltaFrom1ToM(numOfNodes, numOfLoops,numOfPaths, arrayOfLoops, nodesInLoops,nodesInPaths):
-     deltas = np.empty(numOfPaths)
-     i=0
-     for path in nodesInPaths:
+    deltas = np.empty(numOfPaths)
+    i=0
+    for path in nodesInPaths:
         l1,l2=untouchedLoopWithPath(numOfNodes, numOfLoops,arrayOfLoops,nodesInLoops,path)
         if len(l1) ==0:
-             deltas[i]=sp.Integer(1)
+            deltas[i]=sp.Integer(1)
         else:
             l3,l4,_=UnTouchedLoops(numOfNodes, len(l1),l1,l2)
             deltas[i]=getDelta(l3,l4)
         i +=1
-     return deltas  
+    return deltas  
 
 def getTransferFunction(numOfNodes, numOfLoops,numOfPaths, arrayOfLoops,arrayOfPaths, nodesInLoops,nodesInPaths):
-     deltas=deltaFrom1ToM(numOfNodes, numOfLoops,numOfPaths, arrayOfLoops, nodesInLoops,nodesInPaths)
-     l1,l2,compNonToucheddLoops=UnTouchedLoops(numOfNodes, numOfLoops, arrayOfLoops, nodesInLoops)
-     delta=getDelta(l1,l2)
-     result=sp.Integer(0)
-     i=0
-     for path in arrayOfPaths:
+    deltas=deltaFrom1ToM(numOfNodes, numOfLoops,numOfPaths, arrayOfLoops, nodesInLoops,nodesInPaths)
+    l1,l2,compNonToucheddLoops=UnTouchedLoops(numOfNodes, numOfLoops, arrayOfLoops, nodesInLoops)
+    delta=getDelta(l1,l2)
+    result=sp.Integer(0)
+    i=0
+    for path in arrayOfPaths:
         path=sp.simplify(path)
         try:
             path=sp.simplify(path)
         except (ValueError, TypeError) as e:
-              num=float(path)
-              path=sp.Float(num)
+            num=float(path)
+            path=sp.Float(num)
         result += path*deltas[i]
         i +=1
-     result =(result/delta) 
-     print(result)
-     print(compNonToucheddLoops)   
+    result =(result/delta)
+    for i in range(len(deltas)):
+        deltas[i]=str(deltas[i])
+    delta =str(delta) 
+    return{
+        "result":str(result),
+        "compinationsOfUntouchedLoops":compNonToucheddLoops,
+        "delta":delta,
+        "delta From 1 to M":deltas     
+    } 
 # Test data
 a = np.array([[0,0,1,1,0], [0,1,1,1,0]])
 b = ["-g2*h1", "-g1*g2*h2"]
@@ -133,5 +140,5 @@ arrayOfPaths = ["g1*g2","g2"]
 #l1,l2=UnTouchedLoops(8, 5, b, a)
 #getDelta(l1,l2)
 #deltaFrom1ToM(8, 5,2, b, a,Ps)
-getTransferFunction(5, 2,2, b,arrayOfPaths, a,Ps)
+print(getTransferFunction(5, 2,2, b,arrayOfPaths, a,Ps))
 
