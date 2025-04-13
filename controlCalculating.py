@@ -2,6 +2,94 @@ import numpy as np
 import sympy as sp
 
 #input :
+#    graph
+
+#output:
+#       {
+#       "result":                                    the transferFunction (string),
+#       "compinationsOfUntouchedLoops":              the compination of loops (2d array index i is all compinations of (i+1)loops),
+#       "delta":                                     the delta, 
+#       "delta From 1 to M":                         deltas from 1 to m
+#       }
+
+def dfs_forward_paths(cur_node, graph, visited, cur_path, paths, cur_weight):
+    if visited[cur_node] == 1:
+        return
+
+    visited[cur_node] = 1
+    cur_path.append(cur_node)
+
+    if cur_node == len(graph) - 1:
+        paths.append((cur_path.copy(), cur_weight.copy()))
+    else:
+        for node, weight in graph[cur_node]:
+            cur_weight.append(weight)
+            dfs_forward_paths(node, graph, visited, cur_path, paths, cur_weight)
+            cur_weight.pop()
+
+    cur_path.pop()
+    visited[cur_node] = 0
+
+
+def forward_paths(graph):
+    visited = [0 for _ in range(len(graph))]
+    cur_path = []
+    cur_weight = []
+    paths = []
+    dfs_forward_paths(0, graph, visited, cur_path, paths, cur_weight)
+    return paths
+
+def dfs_cycles(cur_node, graph, visited, cur_path, cycles, cur_weight):
+    if visited[cur_node] == 1:
+        idx = cur_path.index(cur_node)
+        cur_path.append(cur_node)
+        cycles.append((cur_path[idx:].copy(), cur_weight[idx:].copy()))
+        cur_path.pop()
+        return
+
+    visited[cur_node] = 1
+    cur_path.append(cur_node)
+
+    for node, weight in graph[cur_node]:
+        cur_weight.append(weight)
+        dfs_cycles(node, graph, visited, cur_path, cycles, cur_weight)
+        cur_weight.pop()
+
+    cur_path.pop()
+    visited[cur_node] = 0
+
+def cycles(graph):
+    visited = [0 for _ in range(len(graph))]
+    cur_path = []
+    cur_weight = []
+    cycles = []
+    dfs_cycles(0, graph, visited, cur_path, cycles, cur_weight)
+    return cycles
+
+def compile(input,n):
+    array2d=[]
+    weights=[]
+    for tuple in input:
+        array=[]
+        for j in range(n):
+            array.append(0)
+        for index in tuple[0]:
+            array[index] =1
+        array2d.append(array)
+        newWeight=sp.Float(1.0)
+        for weight in tuple[1]:
+            try:
+                num=float(weight)
+                weight=sp.Float(num)
+            except (ValueError, TypeError) as e:
+                
+                weight=sp.simplify(weight)
+            newWeight *=weight
+        weights.append(newWeight)
+    return (array2d,weights)
+
+
+#input :
 #       numOfNodes (number of nodes in the graph)
 #       numOfLoops (number of loops in the graph)
 #       numOfPaths (number of forword paths in the graph)
@@ -11,14 +99,6 @@ import sympy as sp
 #        if  nodesInLoops[i]=0 then node[i] is not in the loop)
 #       nodesInPaths (same as before but in the paths)
 #
-#output:
-#       {
-#       "result":                                    the transferFunction (string),
-#       "compinationsOfUntouchedLoops":              the compination of loops (2d array index i is all compinations of (i+1)loops),
-#       "delta":                                     the delta, 
-#       "delta From 1 to M":                         deltas from 1 to m
-#       }
-
 
 def UnTouchedLoops(numOfNodes, numOfLoops, arrayOfLoops, nodesInLoops):
     nonTouchedLoops=[]
@@ -30,7 +110,7 @@ def UnTouchedLoops(numOfNodes, numOfLoops, arrayOfLoops, nodesInLoops):
         except (ValueError, TypeError) as e:
             
             arrayOfLoops[i]=sp.simplify(arrayOfLoops[i])
-              
+            
     numOfUntouched=np.ones(numOfLoops)
     for i in range(numOfLoops):
         for j in range(i + 1, numOfLoops):
@@ -129,16 +209,48 @@ def getTransferFunction(numOfNodes, numOfLoops,numOfPaths, arrayOfLoops,arrayOfP
         "compinationsOfUntouchedLoops":compNonToucheddLoops,
         "delta":delta,
         "delta From 1 to M":deltas     
-    } 
+    }
+ 
+def pipLine(graph):
+    n=len(graph)
+    paths=forward_paths(graph)
+    loops=cycles(graph)
+    nodesInLoops,arrayOfLoops=compile(loops,n)
+    nodesInPaths,arrayOfPaths=compile(paths,n)
+    return getTransferFunction(n, len(arrayOfLoops),len(arrayOfPaths), arrayOfLoops,arrayOfPaths, nodesInLoops,nodesInPaths)
+
+
+
+
+
+
 # Test data
-a = np.array([[0,0,1,1,0], [0,1,1,1,0]])
-b = ["-g2*h1", "-g1*g2*h2"]
-Ps=np.array([[1,1,1,1,1],[1,0,1,1,1]])
-arrayOfPaths = ["g1*g2","g2"]
+#a = np.array([[0,0,1,1,0], [0,1,1,1,0]])
+#b = ["-g2*h1", "-g1*g2*h2"]
+#Ps=np.array([[1,1,1,1,1],[1,0,1,1,1]])
+#arrayOfPaths = ["g1*g2","g2"]
 # Call the function
 #untouchedLoopWithPath(5,4,b,a,P)
 #l1,l2=UnTouchedLoops(8, 5, b, a)
 #getDelta(l1,l2)
 #deltaFrom1ToM(8, 5,2, b, a,Ps)
-print(getTransferFunction(5, 2,2, b,arrayOfPaths, a,Ps))
+#print(getTransferFunction(5, 2,2, b,arrayOfPaths, a,Ps))
+graph = [
+    [(1, 1)],
+    [(2, 2), (3, 4)],
+    [(0, 3)],
+    [(1, 5)]
+]
+graph2=[
+    [(1,1)],
+    [(2,6),(5,10)],
+    [(3,10)],
+    [(2,-1),(4,2)],
+    [(1,-1),(3,-2),(6,1)],
+    [(4,2),(5,-1)],
+    [],
+]
+result = forward_paths(graph2)
+print(result)
+compile(result,7)
 
