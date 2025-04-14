@@ -12,8 +12,34 @@ import sympy as sp
 #       "delta From 1 to M":                         deltas from 1 to m
 #       }
 
+
+def normalize_cycle(nodes, weights):
+    nodes = nodes[:-1]
+    n = len(nodes)
+    min_index = min(range(n), key=lambda i: nodes[i])
+
+
+    rotated_nodes = nodes[min_index:] + nodes[:min_index]
+    rotated_weights = weights[min_index:] + weights[:min_index]
+
+    rotated_nodes.append(rotated_nodes[0])
+
+    return tuple(rotated_nodes), tuple(rotated_weights)
+
+def remove_duplicate_cycles(cycles_list):
+    seen = set()
+    unique = []
+
+    for path, weights in cycles_list:
+        norm_nodes, norm_weights = normalize_cycle(path, weights)
+        if (norm_nodes, norm_weights) not in seen:
+            seen.add((norm_nodes, norm_weights))
+            unique.append((list(norm_nodes), list(norm_weights)))
+
+    return unique
+
 def dfs_forward_paths(cur_node, graph, visited, cur_path, paths, cur_weight):
-    if visited[cur_node] == 1:
+    if visited[cur_node] == 1 or (len(cur_path) > 0 and cur_path[-1] > cur_node):
         return
 
     visited[cur_node] = 1
@@ -30,7 +56,6 @@ def dfs_forward_paths(cur_node, graph, visited, cur_path, paths, cur_weight):
     cur_path.pop()
     visited[cur_node] = 0
 
-
 def forward_paths(graph):
     visited = [0 for _ in range(len(graph))]
     cur_path = []
@@ -41,6 +66,8 @@ def forward_paths(graph):
 
 def dfs_cycles(cur_node, graph, visited, cur_path, cycles, cur_weight):
     if visited[cur_node] == 1:
+        if cur_path[-1] < cur_node:
+            return
         idx = cur_path.index(cur_node)
         cur_path.append(cur_node)
         cycles.append((cur_path[idx:].copy(), cur_weight[idx:].copy()))
@@ -64,7 +91,8 @@ def cycles(graph):
     cur_weight = []
     cycles = []
     dfs_cycles(0, graph, visited, cur_path, cycles, cur_weight)
-    return cycles
+    return remove_duplicate_cycles(cycles)
+
 
 def compile(input,n):
     array2d=[]
@@ -243,14 +271,16 @@ graph = [
 ]
 graph2=[
     [(1,1)],
-    [(2,6),(5,10)],
+    [(2,5),(5,10)],
     [(3,10)],
     [(2,-1),(4,2)],
     [(1,-1),(3,-2),(6,1)],
     [(4,2),(5,-1)],
     [],
 ]
-result = forward_paths(graph2)
-print(result)
-compile(result,7)
+#result = forward_paths(graph2)
+#print(result)
+#compile(result,7)
+print(forward_paths(graph2))
+print(pipLine(graph2))
 
